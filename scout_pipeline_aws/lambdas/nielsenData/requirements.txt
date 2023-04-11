@@ -1,0 +1,6 @@
+pandas
+pymysql
+sqlalchemy
+numpy
+openpyxl
+psutil
