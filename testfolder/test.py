@@ -1,33 +1,27 @@
-from ETL_Lib import *
-import numpy as np
-
+import pandas as pd
+import psutil
+import os
 def dt_or_nor(row):  
     if not 'Downtown' in row['city']:
         return row['city'] + ' ' + row['State']
     else:
         return row['city']
 
+def read_excel_from_s3(filename, Sheet_Name):
+  # Input_Bucket = 'cdl-scout'
+  # Input_Key = 'Internal_Pricing_Exclusions_Tiers.xlsx'
+  # Sheet_Name = 'Internal - Prices Exclusion'
+  df = pd.read_excel(filename, sheet_name=Sheet_Name)
+  return df
 
-def update_nielsen_data(nielsen_file_name,engine):
-
-    """
+def update_nielsen_data():
     
-    This function is used to update nielsen data.
-
-    Inputs:
-    nielsen_file_name (str) : The file name of the newest Nielsen data file.
-                                e.g. 'Canteen Pricing Data 13 WE 06.11.2022.csv'
-
-    """
-
-    # nielsen_file_name = 'Canteen Pricing Data 13 WE 06.11.2022.csv'
-    
-    nielsen_raw = read_df_from_csv_on_s3(input_bucket='cdl-scout', input_key='Nielsen_Data/' + nielsen_file_name)
-    marketbasket = read_excel_from_s3(Input_Bucket='cdl-scout', Input_Key='Nielsen_Data/CPG Data Mappings - Master.xlsx', Sheet_Name='CATEGORY MAPPING')
-    locality = read_excel_from_s3(Input_Bucket='cdl-scout', Input_Key='Nielsen_Data/CPG Data Mappings.xlsx', Sheet_Name='REGION & STATE MAPPING')
-
+    nielsen_raw = pd.read_csv('/Users/yueshengluo/Desktop/scout-pipeline-aws/testfolder/Canteen Pricing Data 13 WE 06.11.2022.csv')
+    marketbasket = read_excel_from_s3('/Users/yueshengluo/Desktop/scout-pipeline-aws/testfolder/CPG Data Mappings.xlsx', Sheet_Name='CATEGORY MAPPING')
+    locality = read_excel_from_s3('/Users/yueshengluo/Desktop/scout-pipeline-aws/testfolder/CPG Data Mappings.xlsx', Sheet_Name='REGION & STATE MAPPING')
     locality = locality.rename(columns={'Unique Markets': 'temploc'}, inplace=False)
     locality['city'] = locality['temploc'].str.replace('.* - ', '',regex = True)
+    #print(locality['city'])
     locality['Unique.Markets'] = locality.apply(lambda row: dt_or_nor(row), axis=1)
     locality = locality.drop('temploc', axis=1)
 
@@ -44,14 +38,9 @@ def update_nielsen_data(nielsen_file_name,engine):
     nielsen_mb = pd.merge(nielsen_raw, marketbasket, on=['UPC'], how = 'left')
     nielsen_mb = nielsen_mb.rename(columns={'Market Name': 'Unique.Markets'}, inplace=False)
     nielsen_full = pd.merge(nielsen_mb, locality, on=['Unique.Markets'])
-    print(nielsen_full.size)
+    #print(nielsen_mb['Unique.Markets'])
     nielsen_full.memory_usage(index=True).sum()
+    print(nielsen_full.size)
     print(psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2)
-    print(nielsen_full.shape)
-    nielsen_full = np.array_split(nielsen_full, 10)
-    for batch in nielsen_full:
-        print(psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2)
-        overwrite_scoutdb_table_noindex(batch, 'AWS_PBI_Nielsen_Raw',engine)
 
-
-# update_nielsen_data(nielsen_file_name = "Canteen Pricing Data 13 WE 06.11.2022.csv")
+update_nielsen_data()

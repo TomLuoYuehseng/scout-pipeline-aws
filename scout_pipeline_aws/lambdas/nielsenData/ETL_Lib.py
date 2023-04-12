@@ -29,7 +29,6 @@ def read_excel_from_s3(Input_Bucket, Input_Key, Sheet_Name):
   excel_obj = client.get_object(Bucket=Input_Bucket, Key=Input_Key)
   body = excel_obj['Body'].read()
   df = pd.read_excel(BytesIO(body), sheet_name=Sheet_Name)
-
   return df
 
 def read_df_from_csv_on_s3(input_bucket, input_key):

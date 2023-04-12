@@ -64,5 +64,5 @@ def QA_Dahsboard_Data_Load(s3_key_list,s3_filename_list,engine):
     # update database
     table_name = "AWS_PBI_Scout_QA_Dashboard"
     overwrite_scoutdb_table_noindex(qa_table, table_name, engine)
-    query_result = query_all_data(table_name, engine)
-    print(query_result)
+    #query_result = query_all_data(table_name, engine)
+    #print(query_result)
